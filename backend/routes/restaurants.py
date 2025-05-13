@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from db import get_db
 from models import Restaurant, RestaurantMeal, Favorite, Order
@@ -81,3 +81,40 @@ def increment_order_count(id: int, db: Session = Depends(get_db)):
             } for m in restaurant.meals
         ]
     }
+
+@router.put("/restaurants/{id}/favorite")
+def add_favorite(id: int, db: Session = Depends(get_db)):
+    restaurant = db.query(Restaurant).filter(Restaurant.id == id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+
+    # Verificar si ya está en favoritos
+    favorite_exists = db.query(Favorite).filter(Favorite.restaurantID == id).first()
+    if favorite_exists:
+        raise HTTPException(status_code=400, detail="El restaurante ya está en favoritos")
+
+    # Registrar favorito con timestamp actual
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    new_favorite = Favorite(
+        restaurantID=id,
+        favoriteDate=now
+    )
+    db.add(new_favorite)
+    db.commit()
+
+    return {"message": "Restaurante agregado a favoritos correctamente."}
+
+
+@router.delete("/restaurants/{id}/favorite", status_code=status.HTTP_204_NO_CONTENT)
+def remove_favorite(id: int, db: Session = Depends(get_db)):
+    restaurant = db.query(Restaurant).filter(Restaurant.id == id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+
+    favorite = db.query(Favorite).filter(Favorite.restaurantID == id).first()
+    if not favorite:
+        raise HTTPException(status_code=404, detail="El restaurante no está en favoritos")
+
+    db.delete(favorite)
+    db.commit()
+    return  # 204 No Content: no se retorna body

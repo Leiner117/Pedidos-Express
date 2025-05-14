@@ -5,6 +5,8 @@ from models import Restaurant, RestaurantMeal, Favorite, Order, OrderMeal
 from schemas.restaurant import RestaurantDetailResponse, MealResponse
 from schemas.order import OrderCreate
 import datetime
+from typing import List
+
 
 router = APIRouter()
 
@@ -157,3 +159,12 @@ def create_order(id: int, order_data: OrderCreate, db: Session = Depends(get_db)
 
     db.commit()
     return {"message": "Pedido creado exitosamente", "order_id": new_order.id}
+
+@router.get("/restaurants/{id}/meals", response_model=List[MealResponse])
+def get_meals_by_restaurant(id: int, db: Session = Depends(get_db)):
+    restaurant = db.query(Restaurant).filter_by(id=id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+
+    meals = db.query(RestaurantMeal).filter_by(restaurantID=id).all()
+    return meals

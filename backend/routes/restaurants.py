@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from db import get_db
-from models import Restaurant, RestaurantMeal, Favorite, Order
+from models import Restaurant, RestaurantMeal, Favorite, Order, OrderMeal
 from schemas.restaurant import RestaurantDetailResponse, MealResponse
+from schemas.order import OrderCreate
 import datetime
 
 router = APIRouter()
@@ -118,3 +119,41 @@ def remove_favorite(id: int, db: Session = Depends(get_db)):
     db.delete(favorite)
     db.commit()
     return  # 204 No Content: no se retorna body
+
+
+@router.post("/restaurants/{id}/orders")
+def create_order(id: int, order_data: OrderCreate, db: Session = Depends(get_db)):
+    restaurant = db.query(Restaurant).filter(Restaurant.id == id).first()
+    if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurante no encontrado")
+
+    # Validar que los meals existan y correspondan al restaurante
+    for item in order_data.meals:
+        meal = db.query(RestaurantMeal).filter_by(id=item.mealID, restaurantID=id).first()
+        if not meal:
+            raise HTTPException(status_code=400, detail=f"Comida ID {item.mealID} no válida para este restaurante")
+
+    # Crear orden
+    new_order = Order(
+        restaurantID=id,
+        creationDate=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        subtotal=order_data.subtotal,
+        tax=order_data.tax,
+        shippingCost=order_data.shippingCost,
+        serviceCost=order_data.serviceCost,
+        total=order_data.total
+    )
+    db.add(new_order)
+    db.commit()  # Para obtener new_order.id
+    db.refresh(new_order)
+
+    # Insertar comidas del pedido
+    for item in order_data.meals:
+        db.add(OrderMeal(
+            orderID=new_order.id,
+            mealID=item.mealID,
+            amount=item.amount
+        ))
+
+    db.commit()
+    return {"message": "Pedido creado exitosamente", "order_id": new_order.id}

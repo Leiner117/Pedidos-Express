@@ -27,7 +27,6 @@ def search_restaurants(
 
     result = []
     for r in restaurants:
-        # Obtener detalles como en el endpoint de detalles
         orders_count = len(r.orders)
         is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
         meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
@@ -55,7 +54,7 @@ def search_restaurants(
 
 @router.get("/restaurants", response_model=List[RestaurantDetailResponse])
 def get_all_restaurants(db: Session = Depends(get_db)):
-    restaurants = db.query(Restaurant).all()
+    restaurants = db.query(Restaurant).order_by(Restaurant.creationDate.desc()).all()
     result = []
 
     for r in restaurants:
@@ -84,9 +83,8 @@ def get_all_restaurants(db: Session = Depends(get_db)):
 
     return result
 
-@router.get("/restaurants/favorites", response_model=List[RestaurantDetailResponse])
+@router.get("/restaurants/favorites-recent", response_model=List[RestaurantDetailResponse])
 def get_recent_favorites(db: Session = Depends(get_db)):
-    # Join entre Restaurant y Favorite, ordenado por fecha descendente
     favorites = (
         db.query(Restaurant)
         .join(Favorite, Restaurant.id == Favorite.restaurantID)

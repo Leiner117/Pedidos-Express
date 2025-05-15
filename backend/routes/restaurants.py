@@ -1,14 +1,58 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from db import get_db
 from models import Restaurant, RestaurantMeal, Favorite, Order, OrderMeal
 from schemas.restaurant import RestaurantDetailResponse, MealResponse
 from schemas.order import OrderCreate
 import datetime
-from typing import List
+from typing import List, Optional
 
 
 router = APIRouter()
+
+@router.get("/restaurants/search", response_model=List[RestaurantDetailResponse])
+def search_restaurants(
+    q: Optional[str] = Query(None, description="Buscar por nombre del restaurante"),
+    type: Optional[str] = Query(None, description="Buscar por tipo de comida"),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Restaurant)
+
+    if q:
+        query = query.filter(Restaurant.name.ilike(f"%{q}%"))
+    if type:
+        query = query.filter(Restaurant.type.ilike(f"%{type}%"))
+
+    restaurants = query.all()
+
+    result = []
+    for r in restaurants:
+        # Obtener detalles como en el endpoint de detalles
+        orders_count = len(r.orders)
+        is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
 
 @router.get("/restaurants/{id}", response_model=RestaurantDetailResponse)
 def get_restaurant_details(id: int, db: Session = Depends(get_db)):

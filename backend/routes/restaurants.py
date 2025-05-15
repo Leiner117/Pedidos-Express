@@ -84,6 +84,44 @@ def get_all_restaurants(db: Session = Depends(get_db)):
 
     return result
 
+@router.get("/restaurants/favorites", response_model=List[RestaurantDetailResponse])
+def get_recent_favorites(db: Session = Depends(get_db)):
+    # Join entre Restaurant y Favorite, ordenado por fecha descendente
+    favorites = (
+        db.query(Restaurant)
+        .join(Favorite, Restaurant.id == Favorite.restaurantID)
+        .order_by(Favorite.favoriteDate.desc())
+        .limit(10)
+        .all()
+    )
+
+    result = []
+    for r in favorites:
+        orders_count = len(r.orders)
+        is_favorite = True  # Garantizado por el join
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
 
 @router.get("/restaurants/{id}", response_model=RestaurantDetailResponse)
 def get_restaurant_details(id: int, db: Session = Depends(get_db)):

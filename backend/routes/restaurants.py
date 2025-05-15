@@ -12,16 +12,16 @@ router = APIRouter()
 
 @router.get("/restaurants/search", response_model=List[RestaurantDetailResponse])
 def search_restaurants(
-    q: Optional[str] = Query(None, description="Buscar por nombre del restaurante"),
-    type: Optional[str] = Query(None, description="Buscar por tipo de comida"),
+    q: Optional[str] = Query(None, description="Buscar por nombre o tipo"),
     db: Session = Depends(get_db)
 ):
     query = db.query(Restaurant)
 
     if q:
-        query = query.filter(Restaurant.name.ilike(f"%{q}%"))
-    if type:
-        query = query.filter(Restaurant.type.ilike(f"%{type}%"))
+        like = f"%{q}%"
+        query = query.filter(
+            (Restaurant.name.ilike(like)) | (Restaurant.type.ilike(like))
+        )
 
     restaurants = query.all()
 
@@ -51,6 +51,7 @@ def search_restaurants(
         ))
 
     return result
+
 
 @router.get("/restaurants", response_model=List[RestaurantDetailResponse])
 def get_all_restaurants(db: Session = Depends(get_db)):

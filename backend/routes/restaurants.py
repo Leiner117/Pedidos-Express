@@ -53,6 +53,37 @@ def search_restaurants(
 
     return result
 
+@router.get("/restaurants", response_model=List[RestaurantDetailResponse])
+def get_all_restaurants(db: Session = Depends(get_db)):
+    restaurants = db.query(Restaurant).all()
+    result = []
+
+    for r in restaurants:
+        orders_count = len(r.orders)
+        is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
 
 @router.get("/restaurants/{id}", response_model=RestaurantDetailResponse)
 def get_restaurant_details(id: int, db: Session = Depends(get_db)):

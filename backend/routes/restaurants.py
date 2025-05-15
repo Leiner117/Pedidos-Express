@@ -96,7 +96,47 @@ def get_recent_favorites(db: Session = Depends(get_db)):
     result = []
     for r in favorites:
         orders_count = len(r.orders)
-        is_favorite = True  # Garantizado por el join
+        is_favorite = True
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
+from sqlalchemy import func
+
+@router.get("/restaurants/top-ordered", response_model=List[RestaurantDetailResponse])
+def get_top_restaurants_by_orders(db: Session = Depends(get_db)):
+    top_restaurants = (
+        db.query(Restaurant)
+        .join(Order, Restaurant.id == Order.restaurantID)
+        .group_by(Restaurant.id)
+        .order_by(func.count(Order.id).desc())
+        .limit(10)
+        .all()
+    )
+
+    result = []
+    for r in top_restaurants:
+        orders_count = len(r.orders)
+        is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
         meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
         meals_response = [
             MealResponse(

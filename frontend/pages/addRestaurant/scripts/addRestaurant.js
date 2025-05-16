@@ -1,7 +1,8 @@
-
 // Referencias a elementos del DOM
 const form = document.getElementById("restaurantForm");
 const restaurantImageInput = document.getElementById("restaurantImageInput");
+const restaurantImagePreview = document.getElementById("restaurantImagePreview");
+const restaurantImagePlaceholder = document.getElementById("restaurantImagePlaceholder");
 const errorRestaurantImage = document.getElementById("errorRestaurantImage");
 const errorRestaurantName = document.getElementById("errorRestaurantName");
 const errorRestaurantType = document.getElementById("errorRestaurantType");
@@ -11,6 +12,35 @@ const errorMeals = document.getElementById("errorMeals");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const successOverlay = document.getElementById("successOverlay");
 const goHomeBtn = document.getElementById("goHomeBtn");
+const restaurantNameInput = document.getElementById("restaurantName");
+
+// Validación de longitud máxima para el nombre del restaurante
+const MAX_RESTAURANT_NAME_LENGTH = 150;
+
+restaurantNameInput.addEventListener('input', function() {
+    const value = this.value;
+    if (value.length > MAX_RESTAURANT_NAME_LENGTH) {
+        this.value = value.slice(0, MAX_RESTAURANT_NAME_LENGTH);
+        errorRestaurantName.textContent = `El nombre no puede tener más de ${MAX_RESTAURANT_NAME_LENGTH} caracteres`;
+        errorRestaurantName.classList.remove("hidden");
+    } else {
+        errorRestaurantName.classList.add("hidden");
+    }
+});
+
+// Manejar el placeholder del select
+const restaurantType = document.getElementById("restaurantType");
+restaurantType.addEventListener('change', function() {
+    if (this.value) {
+        this.setAttribute('data-value', 'selected');
+    } else {
+        this.removeAttribute('data-value');
+    }
+});
+
+// Establecer el placeholder como contenido por defecto
+restaurantType.style.setProperty('--placeholder', `"${restaurantType.dataset.placeholder}"`);
+restaurantType.style.setProperty('content', 'var(--placeholder)');
 
 // Constantes de tamaño máximo
 const MAX_RESTAURANT_IMG_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -29,17 +59,132 @@ function removeMeal(btn) {
   btn.closest("div.border").remove();
 }
 
-// Agrega dinámicamente una nueva tarjeta de comida clonando el template
+// Función para previsualizar imagen
+function previewImage(input, previewElement, placeholderElement) {
+    const container = previewElement.parentElement;
+    const containerWrapper = container.parentElement;
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            // Crear una imagen temporal para obtener las dimensiones reales
+            const tempImg = new Image();
+            tempImg.src = e.target.result;
+            
+            tempImg.onload = function() {
+                const width = this.width;
+                const height = this.height;
+                const ratio = width / height;
+                
+                // Establecer dimensiones máximas
+                const maxWidth = Math.min(800, containerWrapper.offsetWidth);
+                const maxHeight = 400;
+                
+                let newWidth, newHeight;
+                
+                // Calcular dimensiones manteniendo la proporción
+                if (width > height) {
+                    // Imagen horizontal
+                    newWidth = Math.min(width, maxWidth);
+                    newHeight = newWidth / ratio;
+                    
+                    if (newHeight > maxHeight) {
+                        newHeight = maxHeight;
+                        newWidth = newHeight * ratio;
+                    }
+                } else {
+                    // Imagen vertical o cuadrada
+                    newHeight = Math.min(height, maxHeight);
+                    newWidth = newHeight * ratio;
+                }
+                
+                // Centrar el contenedor con el nuevo ancho
+                container.style.width = `${newWidth}px`;
+                container.style.height = `${newHeight}px`;
+                
+                // Mostrar la imagen y ocultar el placeholder
+                previewElement.src = e.target.result;
+                previewElement.classList.remove('hidden');
+                if (placeholderElement) {
+                    placeholderElement.classList.add('hidden');
+                }
+            };
+        };
+        
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        // Restaurar el ancho completo y la altura original
+        container.style.width = '100%';
+        container.style.height = container.id === 'restaurantImageDrop' ? '10rem' : '8rem';
+        previewElement.classList.add('hidden');
+        if (placeholderElement) {
+            placeholderElement.classList.remove('hidden');
+        }
+    }
+}
+
+// Validar imagen del restaurante al seleccionarla
+restaurantImageInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+        if (!validateImage(file, MAX_RESTAURANT_IMG_SIZE)) {
+            errorRestaurantImage.textContent = "La imagen debe ser JPG y no exceder 5 MB";
+            errorRestaurantImage.classList.remove("hidden");
+            this.value = ''; // Limpiar el input
+            if (restaurantImagePreview) {
+                restaurantImagePreview.classList.add('hidden');
+                restaurantImagePlaceholder.classList.remove('hidden');
+            }
+            return;
+        }
+        errorRestaurantImage.classList.add("hidden");
+        previewImage(this, restaurantImagePreview, restaurantImagePlaceholder);
+    }
+});
+
+// Función para configurar la validación de imagen de comida
+function setupMealImageValidation(mealCard) {
+    const input = mealCard.querySelector('.meal-image-input');
+    const errorElement = mealCard.querySelector('.meal-error-image');
+    const preview = mealCard.querySelector('.meal-image-preview');
+    const placeholder = mealCard.querySelector('.meal-image-placeholder');
+    
+    input.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            if (!validateImage(file, MAX_MEAL_IMG_SIZE)) {
+                errorElement.textContent = "La imagen debe ser JPG y no exceder 2 MB";
+                errorElement.classList.remove("hidden");
+                this.value = ''; // Limpiar el input
+                if (preview) {
+                    preview.classList.add('hidden');
+                    placeholder.classList.remove('hidden');
+                }
+                return;
+            }
+            errorElement.classList.add("hidden");
+            previewImage(this, preview, placeholder);
+        }
+    });
+}
+
+// Modificar la función que agrega comidas para incluir la validación
 addMealBtn.addEventListener("click", () => {
-  const tpl = document.getElementById("mealTemplate");
-  const clone = tpl.content.cloneNode(true);
-  mealsContainer.appendChild(clone);
-  mealsContainer.lastElementChild.scrollIntoView({ behavior: "smooth" });
+    const tpl = document.getElementById("mealTemplate");
+    const clone = tpl.content.cloneNode(true);
+    mealsContainer.appendChild(clone);
+    
+    // Configurar previsualización y validación para la nueva tarjeta
+    const newCard = mealsContainer.lastElementChild;
+    setupMealImageValidation(newCard);
+    
+    mealsContainer.lastElementChild.scrollIntoView({ behavior: "smooth" });
 });
 
 // Al cargar la página, agregamos una tarjeta de comida inicial
 window.addEventListener("DOMContentLoaded", () => {
-  addMealBtn.click();
+    addMealBtn.click();
 });
 
 // Manejo del envío del formulario
@@ -67,11 +212,15 @@ form.addEventListener("submit", async (e) => {
     errorRestaurantImage.classList.remove("hidden");
   }
 
-  // 2) Validar nombre del restaurante (requerido, max 100)
+  // 2) Validar nombre del restaurante (requerido, max 15)
   const name = form.restaurantName.value.trim();
   if (!name) {
     valid = false;
     errorRestaurantName.textContent = "Este campo es obligatorio";
+    errorRestaurantName.classList.remove("hidden");
+  } else if (name.length > MAX_RESTAURANT_NAME_LENGTH) {
+    valid = false;
+    errorRestaurantName.textContent = `El nombre no puede tener más de ${MAX_RESTAURANT_NAME_LENGTH} caracteres`;
     errorRestaurantName.classList.remove("hidden");
   }
 
@@ -145,7 +294,7 @@ form.addEventListener("submit", async (e) => {
     meals: meals,
   };
 
-  // Aquí se “envía” el formulario (de momento, solo imprimimos)
+  // Aquí se "envía" el formulario (de momento, solo imprimimos)
   console.log("Enviando formulario:", formData);
 
   try {

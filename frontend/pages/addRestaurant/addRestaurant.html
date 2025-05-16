@@ -7,7 +7,22 @@
     <title>Agregar Nuevo Restaurante</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-     <script src="./pages/addRestaurant/scripts/addRestaurant.js" defer></script>
+    <script src="./scripts/addRestaurant.js" defer></script>
+    <style>
+        select:not([data-value]) {
+            color: gray;
+        }
+        select:not([data-value])::before {
+            content: attr(data-placeholder);
+            color: gray;
+        }
+        select option {
+            color: black;
+        }
+        select option:first-child {
+            display: none;
+        }
+    </style>
 </head>
 
 <body class="bg-white min-h-screen flex flex-col">
@@ -43,24 +58,27 @@
         <form id="restaurantForm" class="w-full p-6 space-y-8" novalidate>
 
             <!-- IMAGEN RESTAURANTE -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-6">
                 <div>
                     <!-- Input para seleccionar imagen local (.jpg, máx 5MB) -->
                     <label class="block text-blue-800 font-semibold mb-2">
                         Imagen del restaurante <span class="text-sm text-gray-500">(opcional)</span>
                     </label>
-                    <div id="restaurantImageDrop"
-                        class="relative w-full h-40 border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center text-blue-600 cursor-pointer hover:bg-blue-50">
-                        <input type="file" accept=".jpg" id="restaurantImageInput"
-                            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                        <div class="text-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12v8m0 0l-3-3m3 3l3-3M12 4v8" />
-                            </svg>
-                            <p>Haga clic para seleccionar una imagen</p>
-                            <p class="text-xs">JPG (máx. 5 MB)</p>
+                    <div class="flex justify-center w-full">
+                        <div id="restaurantImageDrop"
+                            class="relative w-full h-40 border-2 border-dashed border-blue-300 rounded-lg flex items-center justify-center text-blue-600 cursor-pointer hover:bg-blue-50 overflow-hidden transition-all duration-300">
+                            <input type="file" accept=".jpg" id="restaurantImageInput"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                            <div class="text-center" id="restaurantImagePlaceholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-8 w-8" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 12v8m0 0l-3-3m3 3l3-3M12 4v8" />
+                                </svg>
+                                <p>Haga clic para seleccionar una imagen</p>
+                                <p class="text-xs">JPG (máx. 5 MB)</p>
+                            </div>
+                            <img id="restaurantImagePreview" class="absolute inset-0 w-full h-full object-contain rounded-lg hidden" />
                         </div>
                     </div>
                     <!-- Mensaje de error para la imagen del restaurante -->
@@ -69,12 +87,12 @@
 
                 <!-- DATOS BÁSICOS -->
                 <div class="space-y-4">
-                    <!-- Nombre del restaurante (obligatorio, max 100 caracteres) -->
+                    <!-- Nombre del restaurante (obligatorio, max 15 caracteres) -->
                     <div>
                         <label for="restaurantName" class="block text-blue-800 font-semibold mb-1">
                             Nombre del restaurante <span class="text-red-500">*</span>
                         </label>
-                        <input id="restaurantName" name="restaurantName" type="text" required maxlength="100"
+                        <input id="restaurantName" name="restaurantName" type="text" required
                             placeholder="Ingrese el nombre del restaurante"
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" />
                         <p id="errorRestaurantName" class="text-red-600 text-sm mt-1 hidden"></p>
@@ -86,8 +104,9 @@
                             Tipo de restaurante <span class="text-red-500">*</span>
                         </label>
                         <select id="restaurantType" name="restaurantType" required
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                            <option value="">Seleccione...</option>
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 [&:not(:focus):not([data-value])]:text-black"
+                            data-placeholder="Seleccione un tipo de restaurante">
+                            <option value="" disabled selected hidden></option>
                             <option>Comida Típica</option>
                             <option>Comida Rápida</option>
                             <option>Comida Italiana</option>
@@ -136,9 +155,9 @@
 
     <!-- TEMPLATE OCULTO DE UNA COMIDA -->
     <template id="mealTemplate">
-        <div class="relative border border-blue-200 rounded-lg p-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div class="relative border border-blue-200 rounded-lg p-6 space-y-4">
             <!-- Nombre de comida (obligatorio, maxlength=150) -->
-            <div class="md:col-span-1">
+            <div>
                 <label class="block text-blue-800 font-medium mb-1">
                     Nombre de la comida <span class="text-red-500">*</span>
                 </label>
@@ -148,7 +167,7 @@
                 <p class="text-red-600 text-sm mt-1 hidden meal-error-name"></p>
             </div>
             <!-- Precio (obligatorio) -->
-            <div class="md:col-span-1">
+            <div>
                 <label class="block text-blue-800 font-medium mb-1">
                     Precio <span class="text-red-500">*</span>
                 </label>
@@ -157,25 +176,26 @@
                 <p class="text-red-600 text-sm mt-1 hidden meal-error-price"></p>
             </div>
             <!-- Imagen comida (opcional, .jpg, máx 2MB) -->
-            <div class="md:col-span-1">
+            <div>
                 <label class="block text-blue-800 font-medium mb-1">
                     Imagen de la comida <span class="text-sm text-gray-500">(opcional)</span>
                 </label>
-                <div
-                    class="relative border-2 border-dashed border-blue-200 rounded-lg h-32 flex items-center justify-center text-blue-400 cursor-pointer hover:bg-blue-50">
-                    <input type="file" name="mealImage[]" accept=".jpg"
-                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <div class="text-center text-sm">
-                        <p>Haga clic para seleccionar</p>
-                        <p class="text-xs">JPG (máx. 2 MB)</p>
+                <div class="flex justify-center w-full">
+                    <div class="relative w-full h-32 border-2 border-dashed border-blue-200 rounded-lg flex items-center justify-center text-blue-400 cursor-pointer hover:bg-blue-50 overflow-hidden transition-all duration-300">
+                        <input type="file" name="mealImage[]" accept=".jpg" class="meal-image-input absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                        <div class="text-center text-sm meal-image-placeholder">
+                            <p>Haga clic para seleccionar</p>
+                            <p class="text-xs">JPG (máx. 2 MB)</p>
+                        </div>
+                        <img class="meal-image-preview absolute inset-0 w-full h-full object-contain rounded-lg hidden" />
                     </div>
                 </div>
                 <p class="text-red-600 text-sm mt-1 hidden meal-error-image"></p>
             </div>
             <!-- Botón eliminar comida -->
-            <button type="button" class="absolute top-2 right-2 text-red-500 hover:text-red-700"
+            <button type="button" class="absolute -top-3 right-2 text-red-500 hover:text-red-700"
                 onclick="removeMeal(this)">
-                &times;
+                X
             </button>
         </div>
     </template>

@@ -9,7 +9,6 @@ class Restaurant(Base):
     name = Column(String, nullable=False)
     creationDate = Column(String, nullable=False)
     type = Column(String)
-    imagePath = Column(Text)
     thumbnailPath = Column(Text, nullable=True)
     meals = relationship("RestaurantMeal", back_populates="restaurant", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="restaurant", cascade="all, delete-orphan")

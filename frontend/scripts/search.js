@@ -31,7 +31,7 @@ if (!q) {
 
         const card = document.createElement("div");
         card.className = "bg-white rounded shadow hover:shadow-lg transition cursor-pointer";
-        card.onclick = () => location.href = `../view.html?id=${r.id}`;
+        card.onclick = () => location.href = `/frontend/pages/show-restaurants.html?id=${r.id}`;
         card.innerHTML = `
           <img src="${thumbnailPath}" class="w-full h-48 object-cover rounded-t-lg" alt="${name}" />
           <div class="p-3">

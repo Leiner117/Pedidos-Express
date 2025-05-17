@@ -9,7 +9,7 @@ class RestaurantMeal(Base):
     restaurantID = Column(Integer, ForeignKey("Restaurants.id"), nullable=False)
     name = Column(String, nullable=False)
     imagePath = Column(Text)
-    thumbnailPath = Column(Text)
+    thumbnailPath = Column(Text,nullable=True)
     price = Column(Float, nullable=False)
 
     restaurant = relationship("Restaurant", back_populates="meals")

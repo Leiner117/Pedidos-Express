@@ -19,7 +19,7 @@ function createRestaurantCard(r) {
       <p class="text-sm text-gray-600">${r.type}</p>
     </div>
   `;
-  div.onclick = () => location.href = `/frontend/pages/show-restaurants.html?id=${r.id}`;
+  div.onclick = () => location.href = `../pages/show-restaurants.html?id=${r.id}`;
   return div;
 }
 

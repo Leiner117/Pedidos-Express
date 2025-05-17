@@ -3,12 +3,6 @@ from PIL import Image
 from fastapi import UploadFile
 import shutil
 
-def save_image(file: UploadFile, destination_path: str) -> None:
-    """Save an uploaded image to the specified path."""
-    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-    with open(destination_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
 def create_thumbnail(source_path: str, destination_path: str, size=(800, 800)) -> None:
     """Create a thumbnail while maintaining original quality."""
     os.makedirs(os.path.dirname(destination_path), exist_ok=True)
@@ -21,7 +15,7 @@ def create_thumbnail(source_path: str, destination_path: str, size=(800, 800)) -
 def process_restaurant_image(file: UploadFile, restaurant_id: int) -> tuple[str, str]:
     """Process restaurant image and return paths for original and thumbnail."""
     # Define paths
-    uploads_dir = "uploads/restaurants"
+    #uploads_dir = "uploads/restaurants"
     thumbnails_dir = "thumbnails/restaurants"
     
     # Generate filenames
@@ -29,21 +23,16 @@ def process_restaurant_image(file: UploadFile, restaurant_id: int) -> tuple[str,
     filename = f"restaurant_{restaurant_id}{ext}"
     
     # Define full paths
-    original_path = os.path.join(uploads_dir, filename)
+    #original_path = os.path.join(uploads_dir, filename)
     thumbnail_path = os.path.join(thumbnails_dir, filename)
-    
-    # Save original
-    save_image(file, original_path)
-    
     # Create thumbnail
-    create_thumbnail(original_path, thumbnail_path)
+    create_thumbnail(thumbnail_path)
     
-    return original_path, thumbnail_path
+    return thumbnail_path
 
 def process_meal_image(file: UploadFile, restaurant_id: int, meal_id: int) -> tuple[str, str]:
     """Process meal image and return paths for original and thumbnail."""
     # Define paths
-    uploads_dir = "uploads/meals"
     thumbnails_dir = "thumbnails/meals"
     
     # Generate filenames
@@ -51,13 +40,7 @@ def process_meal_image(file: UploadFile, restaurant_id: int, meal_id: int) -> tu
     filename = f"meal_{restaurant_id}_{meal_id}{ext}"
     
     # Define full paths
-    original_path = os.path.join(uploads_dir, filename)
     thumbnail_path = os.path.join(thumbnails_dir, filename)
+    create_thumbnail(thumbnail_path)
     
-    # Save original
-    save_image(file, original_path)
-    
-    # Create thumbnail
-    create_thumbnail(original_path, thumbnail_path)
-    
-    return original_path, thumbnail_path 
+    return thumbnail_path 

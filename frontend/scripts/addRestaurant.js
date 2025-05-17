@@ -179,13 +179,9 @@ addMealBtn.addEventListener("click", () => {
     const newCard = mealsContainer.lastElementChild;
     setupMealImageValidation(newCard);
     
-    mealsContainer.lastElementChild.scrollIntoView({ behavior: "smooth" });
+    
 });
 
-// Al cargar la página, agregamos una tarjeta de comida inicial
-window.addEventListener("DOMContentLoaded", () => {
-    addMealBtn.click();
-});
 
 // Manejo del envío del formulario
 // Manejo del envío del formulario

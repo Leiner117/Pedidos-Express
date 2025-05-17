@@ -16,7 +16,7 @@ class RestaurantCreate(BaseModel):
 class MealResponse(BaseModel):
     id: int
     name: str
-    thumbnailPath: str
+    thumbnailPath: Optional[str] = None  # Now optional
     price: float
 
     class Config:
@@ -27,7 +27,7 @@ class RestaurantDetailResponse(BaseModel):
     name: str
     type: str
     creationDate: str
-    thumbnailPath: str
+    thumbnailPath: Optional[str] = None  # Now optional
     ordersCount: int
     isFavorite: bool
     meals: List[MealResponse]

@@ -1,14 +1,166 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from db import get_db
 from models import Restaurant, RestaurantMeal, Favorite, Order, OrderMeal
 from schemas.restaurant import RestaurantDetailResponse, MealResponse
 from schemas.order import OrderCreate
 import datetime
-from typing import List
+from typing import List, Optional
 
 
 router = APIRouter()
+
+@router.get("/restaurants/search", response_model=List[RestaurantDetailResponse])
+def search_restaurants(
+    q: Optional[str] = Query(None, description="Buscar por nombre o tipo"),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Restaurant)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            (Restaurant.name.ilike(like)) | (Restaurant.type.ilike(like))
+        )
+
+    restaurants = query.all()
+
+    result = []
+    for r in restaurants:
+        orders_count = len(r.orders)
+        is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
+
+@router.get("/restaurants", response_model=List[RestaurantDetailResponse])
+def get_all_restaurants(db: Session = Depends(get_db)):
+    restaurants = db.query(Restaurant).order_by(Restaurant.creationDate.desc()).all()
+    result = []
+
+    for r in restaurants:
+        orders_count = len(r.orders)
+        is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
+@router.get("/restaurants/favorites-recent", response_model=List[RestaurantDetailResponse])
+def get_recent_favorites(db: Session = Depends(get_db)):
+    favorites = (
+        db.query(Restaurant)
+        .join(Favorite, Restaurant.id == Favorite.restaurantID)
+        .order_by(Favorite.favoriteDate.desc())
+        .limit(10)
+        .all()
+    )
+
+    result = []
+    for r in favorites:
+        orders_count = len(r.orders)
+        is_favorite = True
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
+from sqlalchemy import func
+
+@router.get("/restaurants/top-ordered", response_model=List[RestaurantDetailResponse])
+def get_top_restaurants_by_orders(db: Session = Depends(get_db)):
+    top_restaurants = (
+        db.query(Restaurant)
+        .join(Order, Restaurant.id == Order.restaurantID)
+        .group_by(Restaurant.id)
+        .order_by(func.count(Order.id).desc())
+        .limit(10)
+        .all()
+    )
+
+    result = []
+    for r in top_restaurants:
+        orders_count = len(r.orders)
+        is_favorite = db.query(Favorite).filter(Favorite.restaurantID == r.id).first() is not None
+        meals = db.query(RestaurantMeal).filter(RestaurantMeal.restaurantID == r.id).all()
+        meals_response = [
+            MealResponse(
+                id=m.id,
+                name=m.name,
+                price=m.price,
+                thumbnailPath=m.thumbnailPath
+            ) for m in meals
+        ]
+
+        result.append(RestaurantDetailResponse(
+            id=r.id,
+            name=r.name,
+            type=r.type,
+            creationDate=r.creationDate,
+            thumbnailPath=r.thumbnailPath,
+            ordersCount=orders_count,
+            isFavorite=is_favorite,
+            meals=meals_response
+        ))
+
+    return result
+
 
 @router.get("/restaurants/{id}", response_model=RestaurantDetailResponse)
 def get_restaurant_details(id: int, db: Session = Depends(get_db)):

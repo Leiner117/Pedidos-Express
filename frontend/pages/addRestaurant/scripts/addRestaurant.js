@@ -188,8 +188,11 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 // Manejo del envío del formulario
+// Manejo del envío del formulario
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  e.stopImmediatePropagation();
+  e.stopPropagation();
 
   // Ocultar errores previos
   [
@@ -206,13 +209,13 @@ form.addEventListener("submit", async (e) => {
 
   // 1) Validar imagen del restaurante (.jpg ≤ 5 MB)
   const restFile = restaurantImageInput.files[0];
-  if (!validateImage(restFile, MAX_RESTAURANT_IMG_SIZE)) {
+  if (restFile && !validateImage(restFile, MAX_RESTAURANT_IMG_SIZE)) {
     valid = false;
     errorRestaurantImage.textContent = "Formato inválido o tamaño > 5 MB";
     errorRestaurantImage.classList.remove("hidden");
   }
 
-  // 2) Validar nombre del restaurante (requerido, max 15)
+  // 2) Validar nombre del restaurante (requerido, max 150)
   const name = form.restaurantName.value.trim();
   if (!name) {
     valid = false;
@@ -241,6 +244,7 @@ form.addEventListener("submit", async (e) => {
   }
 
   const meals = [];
+  const mealImages = [];
   mealCards.forEach((card) => {
     const nameInput = card.querySelector('input[name="mealName[]"]');
     const priceInput = card.querySelector('input[name="mealPrice[]"]');
@@ -263,7 +267,7 @@ form.addEventListener("submit", async (e) => {
     }
 
     // Imagen comida (opcional, .jpg ≤ 2 MB)
-    if (!validateImage(imgInput.files[0], MAX_MEAL_IMG_SIZE)) {
+    if (imgInput.files[0] && !validateImage(imgInput.files[0], MAX_MEAL_IMG_SIZE)) {
       valid = false;
       const e = card.querySelector(".meal-error-image");
       e.textContent = "Formato inválido o > 2 MB";
@@ -274,8 +278,14 @@ form.addEventListener("submit", async (e) => {
     meals.push({
       name: nameInput.value.trim(),
       price: parseFloat(priceInput.value),
-      image: imgInput.files[0] ? imgInput.files[0].name : null,
     });
+    
+    // Agregar imagen de comida si existe
+    if (imgInput.files[0]) {
+      mealImages.push(imgInput.files[0]);
+    } else {
+      mealImages.push(null);
+    }
   });
 
   if (!valid) {
@@ -286,25 +296,48 @@ form.addEventListener("submit", async (e) => {
   // 5) Mostrar overlay de carga
   loadingOverlay.classList.remove("hidden");
 
-  // Preparar objeto final
-  const formData = {
-    restaurantName: name,
-    restaurantType: type,
-    restaurantImage: restFile ? restFile.name : null,
-    meals: meals,
+  // Preparar objeto final para el endpoint
+  const formData = new FormData();
+  
+  // Agregar los datos del restaurante como JSON
+  const restaurantData = {
+    name: name,
+    type: type,
+    meals: meals
   };
-
-  // Aquí se "envía" el formulario (de momento, solo imprimimos)
-  console.log("Enviando formulario:", formData);
+  formData.append('restaurant_data', JSON.stringify(restaurantData));
+  
+  // Agregar imagen del restaurante si existe
+  if (restFile) {
+    formData.append('restaurant_image', restFile);
+  }
+  
+  // Agregar imágenes de comidas
+  mealImages.forEach((img, index) => {
+    if (img) {
+      formData.append('meal_images', img);
+    }
+  });
 
   try {
-    // Simulación de petición al servidor
-    await new Promise((r) => setTimeout(r, 2000));
+    // Enviar datos al endpoint
+    const response = await fetch('http://localhost:8000/restaurants/add-restaurant', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error('Error en la respuesta del servidor');
+    }
+
+    const result = await response.json();
+    console.log('Restaurante creado:', result);
 
     // 6) Ocultar overlay de carga, mostrar mensaje de éxito
     loadingOverlay.classList.add("hidden");
     successOverlay.classList.remove("hidden");
   } catch (err) {
+    console.error('Error al enviar el formulario:', err);
     // En caso de error real de envío
     loadingOverlay.classList.add("hidden");
     errorMeals.textContent = "Error al crear el restaurante. Intente de nuevo.";

@@ -1,5 +1,17 @@
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Optional
+import datetime
+
+class MealCreate(BaseModel):
+    name: str = Field(..., max_length=150)
+    price: float = Field(..., gt=0)
+    image: Optional[str] = None  # Optional image filename
+
+class RestaurantCreate(BaseModel):
+    name: str = Field(..., max_length=150)
+    type: str
+    image: Optional[str] = None  # Optional image filename
+    meals: List[MealCreate]
 
 class MealResponse(BaseModel):
     id: int

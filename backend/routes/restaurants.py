@@ -22,9 +22,12 @@ async def create_restaurant(
     # Parse restaurant data
     try:
         data = RestaurantCreate(**json.loads(restaurant_data))
+        print(data)
+        print(restaurant_image)
+        print(meal_images)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid restaurant data: {str(e)}")
-    print(data)
+    
     # Create restaurant
     new_restaurant = Restaurant(
         name=data.name,
@@ -37,8 +40,9 @@ async def create_restaurant(
     # Process restaurant image if provided
     if restaurant_image:
         try:
-            thumbnail_path = process_restaurant_image(new_restaurant.id)
+            thumbnail_path = process_restaurant_image(restaurant_image,new_restaurant.id)
             new_restaurant.thumbnailPath = thumbnail_path
+            
         except Exception as e:
             db.rollback()
             raise HTTPException(status_code=400, detail=f"Error processing restaurant image: {str(e)}")
@@ -58,7 +62,7 @@ async def create_restaurant(
         meal_image = meal_images[i] if i < len(meal_images) else None
         if meal_image:
             try:
-                thumbnail_path = process_meal_image(new_restaurant.id, new_meal.id)
+                thumbnail_path = process_meal_image(meal_image,new_restaurant.id, new_meal.id)
                 new_meal.thumbnailPath = thumbnail_path
             except Exception as e:
                 db.rollback()

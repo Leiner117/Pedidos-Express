@@ -1,4 +1,5 @@
 // —— referencias DOM —————————————————————————
+
 const refs = {
   form: document.getElementById("restaurantForm"),
   restaurantImageInput: document.getElementById("restaurantImageInput"),
@@ -22,7 +23,7 @@ const refs = {
 const MAX_RESTAURANT_NAME_LENGTH = 150;
 const MAX_RESTAURANT_IMG_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_MEAL_IMG_SIZE = 2 * 1024 * 1024;       // 2 MB
-
+const API_URL = "http://localhost:8000/restaurants/add-restaurant";
 // —— utilidades ————————————————————————————————
 function validateImage(file, maxSize) {
   if (!file) return true;
@@ -185,22 +186,22 @@ async function handleSubmit(evt) {
   if (restFile) fd.append("restaurant_image", restFile, restFile.name);
   images.forEach(img => img && fd.append("meal_images", img, img.name));
 
-  try {
-    const res = await fetch("http://localhost:8000/restaurants/add-restaurant", {
-      method: "POST",
-      body: fd
+  fetch(API_URL, {
+    method: "POST",
+    body: fd
+  })
+    .then(res => {
+      refs.loadingOverlay.classList.add("hidden");
+      debugger;
+      if (!res.ok) throw new Error();
+      refs.successOverlay.classList.remove("hidden");
+      refs.form.classList.add("hidden");
+    })
+    .catch(() => {
+      refs.loadingOverlay.classList.add("hidden");
+      refs.errorMeals.textContent = "Error al crear el restaurante. Intente de nuevo.";
+      refs.errorMeals.classList.remove("hidden");
     });
-    if (!res.ok) throw new Error("Respuesta error del servidor");
-    await res.json();
-    refs.loadingOverlay.classList.add("hidden");
-    refs.successOverlay.classList.remove("hidden");
-    refs.form.classList.add("hidden");
-  } catch (e) {
-    console.error(e);
-    refs.loadingOverlay.classList.add("hidden");
-    refs.errorMeals.textContent = "Error al crear el restaurante. Intente de nuevo.";
-    refs.errorMeals.classList.remove("hidden");
-  }
 }
 function removeMeal(btn) {
   btn.closest("div.border").remove();

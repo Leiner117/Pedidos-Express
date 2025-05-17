@@ -18,7 +18,7 @@ function createRestaurantCard(r) {
     : `./images/placeholder.jpg`; 
 
   div.innerHTML = `
-    <img src="${imgSrc}" class="h-36 w-full object-cover rounded-t" alt="${r.name}">
+    <img src="${imgSrc}" onerror="this.onerror=null; this.src='./images/placeholder.jpg'" class="h-36 w-full object-cover rounded-t" alt="${r.name}">
     <div class="p-3">
       <h3 class="font-bold">${r.name}</h3>
       <p class="text-sm text-gray-600">${r.type}</p>

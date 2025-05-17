@@ -2,93 +2,87 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <title>Restaurante</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Restaurante - Pedidos</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+  </style>
 </head>
 
 <body class="bg-gray-100 text-gray-900 min-h-screen">
 
-    <!-- Header fijo -->
-    <header class="bg-white shadow-md sticky top-0 z-10">
-  <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-blue-600">🧆 Restaurante</h1>
-    <div class="flex items-center gap-4">
+  <!-- Header -->
+  <header class="bg-white shadow-md sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-blue-600">🧆 Rod Eats</h1>
       <a href="../index.html" class="text-sm text-gray-600 hover:text-blue-500 transition">← Volver a lista</a>
-      <button id="cart-btn" class="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
-        🛒 Carrito (<span id="cart-count">0</span>)
-      </button>
     </div>
+  </header>
+
+  <!-- Contenido principal -->
+  <main class="max-w-5xl mx-auto p-6">
+    
+    <!-- Información del restaurante -->
+    <div id="restaurant-info" class="bg-white p-6 rounded shadow">
+  <!-- Esto se actualiza dinámicamente -->
+  <div id="restaurant-details" class="space-y-2">
+    Cargando...
   </div>
-</header>
 
-    <!-- Contenido principal -->
-    <main class="max-w-5xl mx-auto p-6" id="restaurant">
-        <!-- JS rellenará aquí el contenido -->
-    </main>
-
-    <!-- Modal para historial de pedidos -->
-    <div id="order-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-blue-600">📦 Historial de pedidos</h2>
-                <button id="close-modal" class="text-gray-500 hover:text-red-500 text-xl">&times;</button>
-            </div>
-            <div id="orders-content" class="space-y-4">
-                <!-- Aquí van los pedidos -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para detalle de platillo -->
-    <div id="meal-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6 text-center relative">
-            <button id="close-meal-modal"
-                class="absolute top-3 right-4 text-gray-400 hover:text-red-500 text-2xl">&times;</button>
-            <img id="meal-modal-img" src="" alt="Platillo"
-                class="w-40 h-40 mx-auto object-cover rounded-full shadow mb-4">
-            <h2 id="meal-modal-name" class="text-xl font-bold text-gray-800"></h2>
-            <p id="meal-modal-price" class="text-blue-600 text-lg font-semibold mt-2"></p>
-        </div>
-    </div>
-
-    <!-- Modal del carrito -->
-<div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-  <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold text-blue-600">🛍️ Tu carrito</h2>
-      <button id="close-cart-modal" class="text-gray-500 hover:text-red-500 text-xl">&times;</button>
-    </div>
-    <div id="cart-items" class="space-y-4 mb-4"></div>
-    <div class="text-right font-semibold">
-      <p>Subtotal: ₡<span id="cart-subtotal">0</span></p>
-      <p>Impuestos (13%): ₡<span id="cart-tax">0</span></p>
-      <p>Envío: ₡<span id="cart-shipping">1000</span></p>
-      <p>Servicio: ₡<span id="cart-service">500</span></p>
-      <p class="text-blue-600 text-lg">Total: ₡<span id="cart-total">0</span></p>
-    </div>
-    <button id="checkout-btn" class="mt-4 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
-      Confirmar compra
-    </button>
-  </div>
+  <!-- Botón para historial de pedidos -->
+  <button
+    id="order-history-btn"
+    class="mt-4 bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 transition"
+  >
+    📦 Historial de pedidos
+  </button>
 </div>
 
+    <!-- Sección comidas + carrito -->
+    <div class="flex flex-col lg:flex-row gap-6 mt-6">
+      <!-- Lista de platillos -->
+      <div id="meals-list" class="flex-1"></div>
+      <!-- Contenedor de pedido (drop zone) -->
+      <div id="order-container" class="flex-1 bg-white p-6 rounded shadow">
+        <h2 class="text-xl font-semibold mb-4">🛒 Tu Pedido</h2>
+        <div id="order-items" class="space-y-2">
+          <p class="text-gray-500">Aún no has agregado ningún plato.</p>
+        </div>
+        <div class="mt-4 text-right font-semibold">
+          <p>Subtotal: ₡<span id="order-subtotal">0</span></p>
+          <p>Impuestos (13%): ₡<span id="order-tax">0</span></p>
+          <p>Envío: ₡<span id="order-shipping">1000</span></p>
+          <p>Servicio: ₡<span id="order-service">500</span></p>
+          <p class="text-blue-600 text-lg">Total: ₡<span id="order-total">0</span></p>
+        </div>
+        <button id="checkout-btn" class="mt-4 bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition">
+          Confirmar compra
+        </button>
+      </div>
+    </div>
+  </main>
 
+  <!-- Modal historial de pedidos -->
+  <div id="history-modal" class="flex fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg shadow-lg w-3/4 max-h-[80vh] overflow-y-auto p-6 relative">
+      <button id="close-history" class="absolute top-3 right-4 text-gray-500 hover:text-red-500 text-2xl">&times;</button>
+      <h2 class="text-xl font-bold text-blue-600 mb-4">📦 Historial de pedidos</h2>
+      <div id="history-content" class="space-y-4">
+        <p class="text-gray-500">Cargando...</p>
+      </div>
+    </div>
+  </div>
 
-    <!-- Footer simple -->
-    <footer class="bg-white mt-12 border-t text-center py-4 text-sm text-gray-500">
-        © 2025. Todos los derechos reservados.
-    </footer>
+  <!-- Footer -->
+  <footer class="bg-white mt-12 border-t text-center py-4 text-sm text-gray-500">
+    © 2025. Todos los derechos reservados.
+  </footer>
 
-    <!-- Script de funcionalidad -->
-    <script src="../scripts/show-restaurants.js" type="module"></script>
+  <!-- Script -->
+  <script src="../scripts/show-restaurants.js" type="module"></script>
+  </script>
 </body>
 
 </html>

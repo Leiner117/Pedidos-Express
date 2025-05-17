@@ -1,14 +1,94 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Query
 from sqlalchemy.orm import Session
 from db import get_db
 from models import Restaurant, RestaurantMeal, Favorite, Order, OrderMeal
-from schemas.restaurant import RestaurantDetailResponse, MealResponse
+from schemas.restaurant import RestaurantDetailResponse, MealResponse, RestaurantCreate, MealCreate
 from schemas.order import OrderCreate
 import datetime
 from typing import List, Optional
+from utils.image_handler import process_restaurant_image, process_meal_image
+import json
 
 
 router = APIRouter()
+
+@router.post("/add-restaurant", response_model=RestaurantDetailResponse)
+async def create_restaurant(
+    restaurant_data: str = Form(...),
+    restaurant_image: Optional[UploadFile] = File(None),
+    meal_images: List[UploadFile] = File([]),
+    db: Session = Depends(get_db)
+):
+    # Parse restaurant data
+    try:
+        data = RestaurantCreate(**json.loads(restaurant_data))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid restaurant data: {str(e)}")
+    print(data)
+    # Create restaurant
+    new_restaurant = Restaurant(
+        name=data.name,
+        type=data.type,
+        creationDate=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
+    db.add(new_restaurant)
+    db.flush()  # Get ID without committing
+    
+    # Process restaurant image if provided
+    if restaurant_image:
+        try:
+            original_path, thumbnail_path = process_restaurant_image(restaurant_image, new_restaurant.id)
+            new_restaurant.imagePath = original_path
+            new_restaurant.thumbnailPath = thumbnail_path
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=f"Error processing restaurant image: {str(e)}")
+    
+    # Create meals
+    meals_response = []
+    for i, meal_data in enumerate(data.meals):
+        new_meal = RestaurantMeal(
+            restaurantID=new_restaurant.id,
+            name=meal_data.name,
+            price=meal_data.price
+        )
+        db.add(new_meal)
+        db.flush()  # Get ID without committing
+        
+        # Process meal image if provided
+        meal_image = meal_images[i] if i < len(meal_images) else None
+        if meal_image:
+            try:
+                original_path, thumbnail_path = process_meal_image(meal_image, new_restaurant.id, new_meal.id)
+                new_meal.imagePath = original_path
+                new_meal.thumbnailPath = thumbnail_path
+            except Exception as e:
+                db.rollback()
+                raise HTTPException(status_code=400, detail=f"Error processing meal image: {str(e)}")
+        
+        meals_response.append(MealResponse(
+            id=new_meal.id,
+            name=new_meal.name,
+            price=new_meal.price,
+            thumbnailPath=new_meal.thumbnailPath if new_meal.thumbnailPath else None
+        ))
+    
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error saving to database: {str(e)}")
+    
+    return RestaurantDetailResponse(
+        id=new_restaurant.id,
+        name=new_restaurant.name,
+        type=new_restaurant.type,
+        creationDate=new_restaurant.creationDate,
+        thumbnailPath=new_restaurant.thumbnailPath if new_restaurant.thumbnailPath else None,
+        ordersCount=0,
+        isFavorite=False,
+        meals=meals_response
+    )
 
 @router.get("/restaurants/search", response_model=List[RestaurantDetailResponse])
 def search_restaurants(

@@ -184,22 +184,75 @@ if (!id) {
     .catch(() => { infoDiv.textContent = 'Error al cargar el restaurante.'; });
 }
 
-// Confirmar compra
-document.getElementById('checkout-btn').addEventListener('click', () => {
-  if (cart.length === 0) {
-    alert('No hay platos en el carrito.');
-    return;
+
+// Función para abrir el modal con tipo ('success' | 'error' | 'info') y mensaje
+function showFeedback(type, message) {
+  const modal   = document.getElementById('feedback-modal');
+  const iconDiv = document.getElementById('feedback-icon');
+  const msgP    = document.getElementById('feedback-message');
+
+  // Ajusta el ícono según el tipo
+  let icon;
+  switch(type) {
+    case 'success': icon = '✅'; break;
+    case 'error':   icon = '❌'; break;
+    default:        icon = 'ℹ️';
   }
+  iconDiv.textContent = icon;
+  msgP.textContent     = message;
+
+  modal.classList.remove('hidden');
+}
+
+// Cerrar modal al hacer click en la X
+document.getElementById('feedback-close')
+  .addEventListener('click', () => {
+    document.getElementById('feedback-modal').classList.add('hidden');
+  });
+
+// Cerrar modal al hacer click fuera del contenido
+document.getElementById('feedback-modal')
+  .addEventListener('click', e => {
+    if (e.target.id === 'feedback-modal') {
+      e.target.classList.add('hidden');
+    }
+  });
+
+document.getElementById('checkout-btn').addEventListener('click', async e => {
+  e.preventDefault();
   
-  const payload = {
-    subtotal: parseInt(document.getElementById('order-subtotal').textContent),
-    tax: parseInt(document.getElementById('order-tax').textContent),
-    shippingCost: parseInt(document.getElementById('order-shipping').textContent),
-    serviceCost: parseInt(document.getElementById('order-service').textContent),
-    total: parseInt(document.getElementById('order-total').textContent),
-    meals: cart.map(i => ({ mealID: i.mealID, amount: i.amount }))
-  };
-  fetch(`${API_URL}/${id}/orders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    .then(res => { if (!res.ok) throw new Error(); alert('¡Compra exitosa!'); cart = []; updateOrderUI(); })
-    .catch(() => alert('Error al procesar la compra.'));
+
+  try {
+    if (cart.length === 0) {
+      showFeedback('info', 'Tu carrito está vacío.');
+      return;
+    }
+
+    const payload = {
+      subtotal: parseInt(document.getElementById('order-subtotal').textContent),
+      tax: parseInt(document.getElementById('order-tax').textContent),
+      shippingCost: parseInt(document.getElementById('order-shipping').textContent),
+      serviceCost: parseInt(document.getElementById('order-service').textContent),
+      total: parseInt(document.getElementById('order-total').textContent),
+      meals: cart.map(i => ({ mealID: i.mealID, amount: i.amount }))
+    };
+
+    const res = await fetch(`${API_URL}/${id}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) throw new Error('Error al procesar la compra.');
+
+    showFeedback('success', '¡Compra exitosa!');
+    
+
+    cart = [];
+    updateOrderUI();
+
+  } catch (err) {
+    console.error('Error en compra:', err);
+    showFeedback('error', 'Error al procesar la compra. Intenta de nuevo.');
+  }
 });

@@ -5,7 +5,7 @@ document.getElementById("site-title").onclick = () => location.href = "index.htm
 document.getElementById("search-btn").onclick = () => {
   const query = document.getElementById("search-input").value.trim();
   if (query) {
-    location.href = `views/search.html?q=${encodeURIComponent(query)}`;
+    location.href = `pages/search.html?q=${encodeURIComponent(query)}`;
   }
 };
 
@@ -19,7 +19,7 @@ function createRestaurantCard(r) {
       <p class="text-sm text-gray-600">${r.type}</p>
     </div>
   `;
-  div.onclick = () => location.href = `../pages/show-restaurants.html?id=${r.id}`;
+  div.onclick = () => location.href = `./pages/show-restaurants.html?id=${r.id}`;
   return div;
 }
 
